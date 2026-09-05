@@ -1,0 +1,5 @@
+/coverage.out
+*.test
+/registry
+/.index.json.tmp-*
+/.catalog.md.tmp-*
