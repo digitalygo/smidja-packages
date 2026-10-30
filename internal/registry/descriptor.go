@@ -13,7 +13,7 @@ import (
 	"unicode/utf8"
 )
 
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 const (
 	MaxDescriptorBytes = 16384
@@ -39,6 +39,9 @@ type Descriptor struct {
 	Description   string
 	Maintainers   []string
 	Topics        []string
+	ID            string
+	Scopes        []string
+	ReleaseFeeds  map[string]string
 }
 
 func ParseDescriptor(data []byte) (Descriptor, error) {
@@ -77,6 +80,12 @@ func ParseDescriptor(data []byte) (Descriptor, error) {
 			descriptor.Description, err = decodeString(decoder, key)
 		case "maintainers":
 			descriptor.Maintainers, err = decodeStringArray(decoder, key)
+		case "id":
+			descriptor.ID, err = decodeString(decoder, key)
+		case "scopes":
+			descriptor.Scopes, err = decodeStringArray(decoder, key)
+		case "releaseFeeds":
+			descriptor.ReleaseFeeds, err = decodeReleaseFeeds(decoder)
 		case "topics":
 			descriptor.Topics, err = decodeStringArray(decoder, key)
 		default:
@@ -116,7 +125,10 @@ func (d Descriptor) validate(seen map[string]bool) error {
 	if err := validateIdentifiers("maintainers", d.Maintainers, 1, MaxMaintainers, MaxMaintainerLen); err != nil {
 		return err
 	}
-	return validateIdentifiers("topics", d.Topics, 0, MaxTopics, MaxTopicLen)
+	if err := validateIdentifiers("topics", d.Topics, 0, MaxTopics, MaxTopicLen); err != nil {
+		return err
+	}
+	return d.validateRuntime(seen)
 }
 
 func SplitRepository(repository string) (string, string, error) {

@@ -24,9 +24,10 @@ When edits touch the codebase, run the tests that cover the changed files before
 
 ## Registry invariants
 
-- This repository is a public discovery registry for content-only smidja packages. It never hosts package content, mirrors versions, tags, manifests, or checksums, crawls GitHub, runs package content, or lists compiled bundles.
-- `smidja pkg install owner/repo@version` stays registry independent. Do not add registry-dependent install behavior or a package search surface here.
-- Descriptor schema version 1 stays independent from the package manifest schema. Do not add ids, versions, latest pointers, minimum harness values, dependencies, hashes, manifests, licenses, or URLs to descriptors.
-- `index.json` and `catalog.md` are generated files. Change them only by running `go run ./cmd/registry generate` and committing the result. `go run ./cmd/registry check` must pass on main at all times.
-- The empty registry is a valid state: only `packages/.gitkeep`, with the generated empty outputs, and no invented packages.
+- This is public discovery for runtime packages, not a host, updater, crawler or executor. Never add private package metadata.
+- Descriptor schema 2 is independent of runtime manifest schema 1. IDs, scopes and explicit per-target public HTTPS release feeds are discovery metadata. Versions, hashes, archives and payloads remain publisher-owned and are not mirrored.
+- The runtime takes one explicit source URL. Do not claim automatic target selection, catalog-dependent installation or click-to-install integration.
+- Supported targets are Linux/macOS amd64 and arm64 only.
+- `index.json` and `catalog.md` are generated files. Change them only with `go run ./cmd/registry generate`; `go run ./cmd/registry check` must pass.
+- Empty catalog is valid: only `packages/.gitkeep`, no invented listings.
 - CI keeps `contents: read`, `persist-credentials: false`, full action SHAs, no secrets, and no `pull_request_target`.

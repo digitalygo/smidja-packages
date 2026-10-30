@@ -18,6 +18,6 @@ A short description of the change: which package is listed, updated, transferred
 
 ## Scope
 
-- [ ] The package is content only
-- [ ] The change adds no package content, versions, hashes, manifests, or licenses to the registry
+- [ ] The package uses runtime manifest schema 1, with public feeds for declared targets/scopes
+- [ ] The change adds no private metadata, credentials, package payloads, versions, hashes or manifests to the registry
 - [ ] Evidence lives in this pull request discussion or in public release metadata, never in the descriptor

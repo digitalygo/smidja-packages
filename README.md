@@ -1,49 +1,25 @@
 # Smidja packages
 
-A public discovery registry of content-only [smidja](https://github.com/digitalygo/smidja) packages. The registry lists where packages live so that people can find them. It is not package hosting, it is not a compiled bundle registry, and it is not part of the install path.
+Public discovery for [Smidja](https://github.com/digitalygo/smidja) manager/client runtime packages: teams, workflows, skills and extension tools, including executable helpers. Smidja itself remains the base binary; packages are not replacement harness binaries.
 
-Content-only packages are versioned public GitHub repositories of skills, agents, prompts, and config defaults that `smidja pkg` installs into an existing harness. Installation stays direct and registry independent:
+This repository neither hosts packages nor downloads or executes them. It does not mirror versions, archives, manifests or checksums. The empty catalog is intentional; no package is listed until its publisher submits a reviewed descriptor. Private package metadata must never be submitted here.
 
-```bash
-smidja pkg install owner/repo@version
-```
+## Discovery and installation
 
-GitHub tags remain the authoritative record of versions. Cutting a release never requires a registry update, and the registry never mirrors versions, manifests, checksums, or package content.
+Descriptors provide a package ID and explicit HTTPS release feed for each supported OS/architecture. Choose the feed matching the machine where the package will execute, then configure that source in the manager or client. Linux/macOS amd64 and arm64 are supported; ARMv7 and Windows are not supported initially.
 
-## What is inside
+The current runtime accepts one explicit source URL; it does not automatically select a target from this catalog, and there is no click-to-install integration. Do not use the legacy `smidja pkg install owner/repo@version` command for these runtime archives.
 
-- `packages/<lowercase-owner>/<lowercase-repo>.json`, one publisher maintained descriptor per listed package.
-- `index.json` and `catalog.md`, generated files committed to git.
-- `cmd/registry`, a standard library only Go tool that validates the descriptors and produces the generated files.
-- The [registry format](docs/registry-format.md) documents the descriptor schema, the strict parsing rules, and the generated output contracts.
+A publisher feed returns `id`, `version`, `archive_url`, and `sha256`. Its ZIP contains `smidja.json` runtime manifest schema 1 plus the inventoried payload. The runtime verifies package compatibility and hashes; this offline discovery validator does not. Public feeds must work without credentials. Private sources use the same package format but are configured directly, outside this public catalog.
 
-## Listing is discovery, not endorsement
+Installing trusts the publisher and its automatic updates. Review source and package contents before trusting them: tools may execute code. Missing tool credentials are reported on invocation, not provisioned by this catalog.
 
-The registry does not certify the authenticity, safety, or quality of any listed package, and content-only prompts and config can influence agent behavior. Review a package and its tags before installing it. Admission is handled by the registry maintainers, who verify one explicit canonical tag in a disposable credential-free environment. The required CI never crawls the network and never executes package content.
-
-## Commands
-
-From a checkout of this repository:
+## Maintenance
 
 ```bash
+go test ./...
 go run ./cmd/registry generate
 go run ./cmd/registry check
 ```
 
-`generate` validates every descriptor and rewrites `index.json` and `catalog.md`. `check` validates the descriptors and verifies that the committed outputs match exactly without writing anything. CI runs `check` on every pull request and every push to main.
-
-## Submitting a package
-
-Open a pull request that adds one descriptor and the regenerated output files. The [contribution guide](.github/CONTRIBUTING.md) covers the ownership evidence rules for initial listings, updates, transfers, and replacements.
-
-## Repository layout
-
-```text
-packages/<owner>/<repo>.json   publisher maintained descriptors
-packages/.gitkeep              placeholder while no descriptors are listed
-index.json                     generated machine readable index
-catalog.md                     generated human readable catalog
-cmd/registry                   the registry command line tool
-internal/registry              validation, rendering, and output logic
-docs/registry-format.md        the descriptor schema and output contracts
-```
+Descriptors live in `packages/<lowercase-owner>/<lowercase-repo>.json`. `index.json` and `catalog.md` are generated, deterministic outputs. CI is offline, read-only and secret-free. See [format](docs/registry-format.md) and [contributing](.github/CONTRIBUTING.md).

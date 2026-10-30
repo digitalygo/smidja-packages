@@ -10,23 +10,20 @@ import (
 	"testing"
 )
 
-const emptyIndexJSON = "{\n  \"schemaVersion\": 1,\n  \"packages\": []\n}\n"
+const emptyIndexJSON = "{\n  \"schemaVersion\": 2,\n  \"packages\": []\n}\n"
 
-const emptyCatalogMD = "# Smidja package catalog\n" +
-	"\n" +
-	"Generated discovery index of content-only [smidja](https://github.com/digitalygo/smidja) packages. This listing is not an endorsement: the registry does not host package content, does not mirror versions, and does not certify the authenticity, safety, or quality of any listed package. Content-only packages carry prompts, agents, and config defaults that can influence agent behavior, so review a package and its tags before installing it.\n" +
-	"\n" +
-	"Installation is direct and registry independent, and GitHub tags remain the authoritative record of versions:\n" +
-	"\n" +
-	"```text\n" +
-	"smidja pkg install owner/repo@version\n" +
-	"```\n" +
-	"\n" +
-	"To list a package, open a pull request that adds a descriptor under `packages/` with the required ownership evidence. The submission rules live in the [contribution guide](.github/CONTRIBUTING.md), and the descriptor schema is documented in the [registry format](docs/registry-format.md).\n" +
-	"\n" +
-	"## Packages\n" +
-	"\n" +
-	"No packages are listed yet. The registry starts empty on purpose; see the [contribution guide](.github/CONTRIBUTING.md) to submit the first descriptor.\n"
+const emptyCatalogMD = `# Smidja package catalog
+
+Generated discovery index of [Smidja](https://github.com/digitalygo/smidja) runtime packages. Listing is not endorsement. Packages may contain executable tools; inspect and trust the publisher before installing. This registry neither hosts packages nor verifies their runtime contents.
+
+Choose a release feed for your exact OS/architecture and configure that HTTPS source in the manager or client. The current runtime does not automatically select targets or install from this catalog. Publisher feeds, not this index, supply versions and archive checksums. Private packages stay outside this public catalog.
+
+Submission rules: [contribution guide](.github/CONTRIBUTING.md). Schema: [registry format](docs/registry-format.md).
+
+## Packages
+
+No packages are listed yet. The registry starts empty on purpose; see the [contribution guide](.github/CONTRIBUTING.md) to submit the first descriptor.
+`
 
 func newCommandRepo(t *testing.T) string {
 	t.Helper()
@@ -145,7 +142,7 @@ func TestRunGenerateSinglePackage(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "packages", "a"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	descriptor := `{"schemaVersion":1,"repository":"a/b","description":"d","maintainers":["alice"]}`
+	descriptor := `{"schemaVersion":2,"id":"example.package","scopes":["manager"],"releaseFeeds":{"linux/amd64":"https://example.org/release.json"},"repository":"a/b","description":"d","maintainers":["alice"]}`
 	if err := os.WriteFile(filepath.Join(root, "packages", "a", "b.json"), []byte(descriptor), 0o644); err != nil {
 		t.Fatal(err)
 	}

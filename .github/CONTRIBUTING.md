@@ -4,8 +4,8 @@ Thank you for wanting to list a package. This registry is a small, low maintenan
 
 ## What can be listed
 
-- Content-only smidja packages: public GitHub repositories of skills, agents, prompts, and config defaults with no code.
-- Compiled bundles are not listed here. The registry does not host packages, mirror versions, or certify safety, and listing is discovery, not endorsement.
+- Runtime Smidja packages from public GitHub repositories, with teams, workflows, skills and extension tools. Executable helpers are allowed; replacement harness binaries are not.
+- Private package metadata must not be submitted here. The registry does not host packages, mirror versions, or certify safety, and listing is discovery, not endorsement.
 
 ## Submission rules
 
@@ -26,6 +26,9 @@ Thank you for wanting to list a package. This registry is a small, low maintenan
 
 ## Descriptor
 
+- All listed feeds must be public HTTPS endpoints requiring no credentials. No credentials, signed URLs, customer data or private package names belong in a submission.
+- Match the descriptor ID and supported target/scope metadata against the publisher manifest. The offline validator checks syntax, not endpoint availability or publisher claims.
+
 - Add `packages/<lowercase-owner>/<lowercase-repo>.json` following the schema documented in the [registry format](../docs/registry-format.md).
 - Regenerate the output files with `go run ./cmd/registry generate`.
 - Validate the regenerated outputs with `go run ./cmd/registry check`.
@@ -34,7 +37,7 @@ Thank you for wanting to list a package. This registry is a small, low maintenan
 ## Review and admission
 
 - Registry maintainers review the descriptor and the ownership evidence.
-- Admission includes verifying one explicit canonical version tag of the package in a disposable credential-free environment before merging.
+- Admission includes reviewing one explicit release feed and its archive inventory without executing package contents, in a disposable credential-free environment before merging.
 - The repository CI runs offline checks only: it never crawls the network and never executes package content.
 
 ## Pull requests
