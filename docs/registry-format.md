@@ -12,7 +12,7 @@ Illustrative example only; this is not an actual listing:
 {
   "schemaVersion": 2,
   "repository": "example/coding-tools",
-  "description": "Review workflow and supporting tools.",
+  "description": "Review Verk and supporting tools.",
   "maintainers": ["alice"],
   "topics": ["review"],
   "id": "example.coding",

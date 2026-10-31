@@ -1,6 +1,6 @@
 # Smidja packages
 
-Public discovery for [Smidja](https://github.com/digitalygo/smidja) manager/client runtime packages: teams, workflows, skills and extension tools, including executable helpers. Smidja itself remains the base binary; packages are not replacement harness binaries.
+Public discovery for [Smidja](https://github.com/digitalygo/smidja) manager/client runtime packages: Lid, Verk, skills and extension tools, including executable helpers. Smidja itself remains the base binary; packages are not replacement harness binaries.
 
 This repository neither hosts packages nor downloads or executes them. It does not mirror versions, archives, manifests or checksums. The empty catalog is intentional; no package is listed until its publisher submits a reviewed descriptor. Private package metadata must never be submitted here.
 
