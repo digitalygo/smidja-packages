@@ -9,10 +9,13 @@ import (
 )
 
 type Record struct {
-	Repository  string   `json:"repository"`
-	Description string   `json:"description"`
-	Maintainers []string `json:"maintainers"`
-	Topics      []string `json:"topics"`
+	Repository   string            `json:"repository"`
+	Description  string            `json:"description"`
+	Maintainers  []string          `json:"maintainers"`
+	Topics       []string          `json:"topics"`
+	ID           string            `json:"id,omitempty"`
+	Scopes       []string          `json:"scopes,omitempty"`
+	ReleaseFeeds map[string]string `json:"releaseFeeds,omitempty"`
 }
 
 type indexDocument struct {
@@ -44,6 +47,17 @@ func BuildCatalog(descriptors []Descriptor) ([]byte, error) {
 		repositoryURL := fmt.Sprintf("https://github.com/%s/%s", owner, name)
 		catalog.WriteString(fmt.Sprintf("- [%s](%s) ([tags](%s/tags)): %s\n", record.Repository, repositoryURL, repositoryURL, escapeMarkdown(record.Description)))
 		catalog.WriteString(fmt.Sprintf("  - maintainers: %s\n", formatMaintainers(record.Maintainers)))
+		if record.ID != "" {
+			catalog.WriteString(fmt.Sprintf("  - package: `%s`; scopes: %s\n", escapeMarkdown(record.ID), formatTopics(record.Scopes)))
+			targets := make([]string, 0, len(record.ReleaseFeeds))
+			for target := range record.ReleaseFeeds {
+				targets = append(targets, target)
+			}
+			slices.Sort(targets)
+			for _, target := range targets {
+				catalog.WriteString(fmt.Sprintf("  - %s release feed: %s\n", escapeMarkdown(target), escapeMarkdown(record.ReleaseFeeds[target])))
+			}
+		}
 		if len(record.Topics) > 0 {
 			catalog.WriteString(fmt.Sprintf("  - topics: %s\n", formatTopics(record.Topics)))
 		}
@@ -59,6 +73,7 @@ func sortedRecords(descriptors []Descriptor) []Record {
 			Description: descriptor.Description,
 			Maintainers: sortedCopy(descriptor.Maintainers),
 			Topics:      sortedCopy(descriptor.Topics),
+			ID:          descriptor.ID, Scopes: sortedCopy(descriptor.Scopes), ReleaseFeeds: descriptor.ReleaseFeeds,
 		})
 	}
 	slices.SortFunc(records, compareRecords)
@@ -114,19 +129,16 @@ func isASCIIPunctuation(char byte) bool {
 		(char >= '{' && char <= '~')
 }
 
-const catalogIntro = "# Smidja package catalog\n" +
-	"\n" +
-	"Generated discovery index of content-only [smidja](https://github.com/digitalygo/smidja) packages. This listing is not an endorsement: the registry does not host package content, does not mirror versions, and does not certify the authenticity, safety, or quality of any listed package. Content-only packages carry prompts, agents, and config defaults that can influence agent behavior, so review a package and its tags before installing it.\n" +
-	"\n" +
-	"Installation is direct and registry independent, and GitHub tags remain the authoritative record of versions:\n" +
-	"\n" +
-	"```text\n" +
-	"smidja pkg install owner/repo@version\n" +
-	"```\n" +
-	"\n" +
-	"To list a package, open a pull request that adds a descriptor under `packages/` with the required ownership evidence. The submission rules live in the [contribution guide](.github/CONTRIBUTING.md), and the descriptor schema is documented in the [registry format](docs/registry-format.md).\n" +
-	"\n" +
-	"## Packages\n" +
-	"\n"
+const catalogIntro = `# Smidja package catalog
+
+Generated discovery index of [Smidja](https://github.com/digitalygo/smidja) runtime packages. Listing is not endorsement. Packages may contain executable tools; inspect and trust the publisher before installing. This registry neither hosts packages nor verifies their runtime contents.
+
+Choose a release feed for your exact OS/architecture and configure that HTTPS source in the manager or client. The current runtime does not automatically select targets or install from this catalog. Publisher feeds, not this index, supply versions and archive checksums. Private packages stay outside this public catalog.
+
+Submission rules: [contribution guide](.github/CONTRIBUTING.md). Schema: [registry format](docs/registry-format.md).
+
+## Packages
+
+`
 
 const catalogEmptyState = "No packages are listed yet. The registry starts empty on purpose; see the [contribution guide](.github/CONTRIBUTING.md) to submit the first descriptor.\n"

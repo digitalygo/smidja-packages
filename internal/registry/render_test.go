@@ -19,7 +19,7 @@ func TestBuildIndexEmpty(t *testing.T) {
 func TestBuildIndexPopulated(t *testing.T) {
 	t.Parallel()
 	want := "{\n" +
-		"  \"schemaVersion\": 1,\n" +
+		"  \"schemaVersion\": 2,\n" +
 		"  \"packages\": [\n" +
 		"    {\n" +
 		"      \"repository\": \"acme/tools\",\n" +
@@ -44,8 +44,8 @@ func TestBuildIndexPopulated(t *testing.T) {
 		"  ]\n" +
 		"}\n"
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "Octo-Labs/Daily-Notes", Description: "Daily notes skill with config defaults.", Maintainers: []string{"alice"}, Topics: []string{"notes", "daily"}},
-		{SchemaVersion: 1, Repository: "acme/tools", Description: "A set of review prompts.", Maintainers: []string{"bob", "alice"}},
+		{SchemaVersion: 2, Repository: "Octo-Labs/Daily-Notes", Description: "Daily notes skill with config defaults.", Maintainers: []string{"alice"}, Topics: []string{"notes", "daily"}},
+		{SchemaVersion: 2, Repository: "acme/tools", Description: "A set of review prompts.", Maintainers: []string{"bob", "alice"}},
 	}
 	got := BuildIndex(descriptors)
 	if string(got) != want {
@@ -56,9 +56,9 @@ func TestBuildIndexPopulated(t *testing.T) {
 func TestBuildIndexSortsCaseInsensitively(t *testing.T) {
 	t.Parallel()
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "Zeta/Widget", Description: "d", Maintainers: []string{"a"}},
-		{SchemaVersion: 1, Repository: "alpha/tools", Description: "d", Maintainers: []string{"a"}},
-		{SchemaVersion: 1, Repository: "Beta/Gamma", Description: "d", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "Zeta/Widget", Description: "d", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "alpha/tools", Description: "d", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "Beta/Gamma", Description: "d", Maintainers: []string{"a"}},
 	}
 	index := string(BuildIndex(descriptors))
 	alpha := strings.Index(index, `"alpha/tools"`)
@@ -72,8 +72,8 @@ func TestBuildIndexSortsCaseInsensitively(t *testing.T) {
 func TestBuildIndexTieBreaksOnExactRepository(t *testing.T) {
 	t.Parallel()
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "alpha/b", Description: "d", Maintainers: []string{"a"}},
-		{SchemaVersion: 1, Repository: "Alpha/b", Description: "d", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "alpha/b", Description: "d", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "Alpha/b", Description: "d", Maintainers: []string{"a"}},
 	}
 	index := string(BuildIndex(descriptors))
 	if strings.Index(index, `"Alpha/b"`) > strings.Index(index, `"alpha/b"`) {
@@ -84,9 +84,9 @@ func TestBuildIndexTieBreaksOnExactRepository(t *testing.T) {
 func TestBuildIndexSourceOrderIndependence(t *testing.T) {
 	t.Parallel()
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "acme/tools", Description: "d1", Maintainers: []string{"a"}, Topics: []string{"x"}},
-		{SchemaVersion: 1, Repository: "Octo-Labs/Daily-Notes", Description: "d2", Maintainers: []string{"b"}},
-		{SchemaVersion: 1, Repository: "mid/marker", Description: "d3", Maintainers: []string{"c"}, Topics: []string{"y", "x"}},
+		{SchemaVersion: 2, Repository: "acme/tools", Description: "d1", Maintainers: []string{"a"}, Topics: []string{"x"}},
+		{SchemaVersion: 2, Repository: "Octo-Labs/Daily-Notes", Description: "d2", Maintainers: []string{"b"}},
+		{SchemaVersion: 2, Repository: "mid/marker", Description: "d3", Maintainers: []string{"c"}, Topics: []string{"y", "x"}},
 	}
 	first := string(BuildIndex(descriptors))
 	reversed := slices.Clone(descriptors)
@@ -100,7 +100,7 @@ func TestBuildIndexSourceOrderIndependence(t *testing.T) {
 func TestBuildIndexEscapesHTMLSignificantCharacters(t *testing.T) {
 	t.Parallel()
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "a/b", Description: "<b>bold</b> & \"quoted\" <script>alert(1)</script>", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "a/b", Description: "<b>bold</b> & \"quoted\" <script>alert(1)</script>", Maintainers: []string{"a"}},
 	}
 	index := string(BuildIndex(descriptors))
 	if strings.Contains(index, "<script>") || strings.Contains(index, "<b>") {
@@ -136,8 +136,8 @@ func TestBuildCatalogPopulated(t *testing.T) {
 		"  - maintainers: @alice\n" +
 		"  - topics: `daily`, `notes`\n"
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "Octo-Labs/Daily-Notes", Description: "Daily notes skill with config defaults.", Maintainers: []string{"alice"}, Topics: []string{"notes", "daily"}},
-		{SchemaVersion: 1, Repository: "acme/tools", Description: "A set of review prompts.", Maintainers: []string{"bob", "alice"}},
+		{SchemaVersion: 2, Repository: "Octo-Labs/Daily-Notes", Description: "Daily notes skill with config defaults.", Maintainers: []string{"alice"}, Topics: []string{"notes", "daily"}},
+		{SchemaVersion: 2, Repository: "acme/tools", Description: "A set of review prompts.", Maintainers: []string{"bob", "alice"}},
 	}
 	got, err := BuildCatalog(descriptors)
 	if err != nil {
@@ -150,7 +150,7 @@ func TestBuildCatalogPopulated(t *testing.T) {
 
 func TestBuildCatalogRejectsInvalidRepository(t *testing.T) {
 	t.Parallel()
-	descriptors := []Descriptor{{SchemaVersion: 1, Repository: "not-a-repo", Description: "d", Maintainers: []string{"a"}}}
+	descriptors := []Descriptor{{SchemaVersion: 2, Repository: "not-a-repo", Description: "d", Maintainers: []string{"a"}}}
 	if _, err := BuildCatalog(descriptors); err == nil || !strings.Contains(err.Error(), "render catalog") {
 		t.Fatalf("BuildCatalog error = %v, want a render error", err)
 	}
@@ -160,7 +160,7 @@ func TestBuildCatalogEscapesMarkdownInjection(t *testing.T) {
 	t.Parallel()
 	injection := "[x](https://evil.example) <img src=x onerror=alert(1)> `cmd` *bold* _em_ & quot $math$ |pipe| ~strike~ #head !bang (paren) {brace} back\\slash"
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "evil/pkg", Description: injection, Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "evil/pkg", Description: injection, Maintainers: []string{"a"}},
 	}
 	catalog, err := BuildCatalog(descriptors)
 	if err != nil {
@@ -200,7 +200,7 @@ func TestBuildCatalogEscapesMarkdownInjection(t *testing.T) {
 func TestBuildCatalogPreservesUnicodeInDescriptions(t *testing.T) {
 	t.Parallel()
 	descriptors := []Descriptor{
-		{SchemaVersion: 1, Repository: "a/b", Description: "每日笔记 émoji 🎉", Maintainers: []string{"a"}},
+		{SchemaVersion: 2, Repository: "a/b", Description: "每日笔记 émoji 🎉", Maintainers: []string{"a"}},
 	}
 	catalog, err := BuildCatalog(descriptors)
 	if err != nil {

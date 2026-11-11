@@ -1,87 +1,61 @@
-# Registry format
+# Runtime package discovery format
 
-The registry lists content-only [smidja](https://github.com/digitalygo/smidja) packages. Each listed package is described by one publisher maintained JSON descriptor under `packages/`, and the generated `index.json` and `catalog.md` files are derived from those descriptors. The descriptor schema version 1 is independent from the package manifest schema 0 that `smidja.json` uses inside packages; the registry never reads, mirrors, or validates package manifests.
+Descriptor schema **2** is independent of the runtime archive manifest schema **1**. The previous content-only descriptor schema 1 is superseded; the public catalog was empty, so no listings need migration. This repository never reads or validates remote manifests and never mirrors versions or checksums.
 
-## What the registry is not
+## Descriptor
 
-- The registry does not host package content, mirror versions, tags, manifests, or checksums, or crawl GitHub.
-- `smidja pkg install owner/repo@version` is direct and registry independent, and GitHub tags remain the authoritative record of versions.
-- Listing is discovery, not endorsement: the registry does not certify authenticity, safety, or quality, and content-only prompts and config can influence agent behavior.
+Place one JSON file at `packages/<lowercase-owner>/<lowercase-repo>.json`, matching `repository` case-insensitively. Preserve the publisher's repository casing in the JSON. Duplicate repository identities, symlinks, special files and unexpected directory structure are rejected. Keep only `packages/.gitkeep` when there are no listings.
 
-## Descriptor location
-
-`packages/<lowercase-owner>/<lowercase-repo>.json`
-
-- The descriptor path must be exactly `<owner>/<repo>.json` under `packages/` with both segments lowercase, matching the `repository` field after lowercasing. Uppercase segments are rejected, for example `packages/Octo-Labs/Tools.json` fails and only `packages/octo-labs/tools.json` is accepted.
-- The `repository` field keeps its original casing in the generated output because harness identity comparison is case sensitive, so a descriptor at `packages/octo-labs/tools.json` may declare `Octo-Labs/Tools`.
-- Two repositories that are equal case insensitively collide and are rejected, for example `acme/tools` and `ACME/TOOLS`; both resolve to the same canonical descriptor path, so a collision can never be reached through distinct files.
-- While no descriptors are listed, the directory holds only `packages/.gitkeep`; once a descriptor lands, `.gitkeep` must be removed.
-- Symlinks, special files, unexpected files, and any structure other than `packages/<owner>/<repo>.json` are rejected.
-
-## Descriptor schema
-
-Example:
+Illustrative example only; this is not an actual listing:
 
 ```json
 {
-  "schemaVersion": 1,
-  "repository": "octo-labs/smidja-daily-notes",
-  "description": "Daily notes skill with its config defaults.",
+  "schemaVersion": 2,
+  "repository": "example/coding-tools",
+  "description": "Review Verk and supporting tools.",
   "maintainers": ["alice"],
-  "topics": ["notes", "productivity"]
+  "topics": ["review"],
+  "id": "example.coding",
+  "scopes": ["manager", "client"],
+  "releaseFeeds": {
+    "linux/amd64": "https://publisher.example/linux-amd64/release.json",
+    "linux/arm64": "https://publisher.example/linux-arm64/release.json",
+    "darwin/amd64": "https://publisher.example/darwin-amd64/release.json",
+    "darwin/arm64": "https://publisher.example/darwin-arm64/release.json"
+  }
 }
 ```
 
-| Field | Type | Required | Constraints |
-| --- | --- | --- | --- |
-| `schemaVersion` | number | yes | Must be the number `1`. |
-| `repository` | string | yes | `owner/repo`. The owner is alphanumeric segments separated by single hyphens with 1 to 39 characters. The repository name is 1 to 100 ASCII letters, digits, underscores, hyphens, and dots, and `.` or `..` are rejected. Schemes, hosts, versions, queries, and fragments cannot survive these rules. |
-| `description` | string | yes | Trimmed, single line, plain text with 1 to 200 Unicode characters and no control, line separator, or format characters. |
-| `maintainers` | array | yes | 1 to 10 distinct lowercase GitHub logins of at most 39 characters: lowercase letters and digits in segments separated by single hyphens. |
-| `topics` | array | no | Absent, empty, or up to 5 distinct lowercase topic identifiers of at most 35 characters, matching `[a-z0-9]+(-[a-z0-9]+)*`. |
+Required fields:
 
-Descriptors deliberately carry no global package id, versions, latest pointer, minimum harness, dependencies, hashes, manifests, licenses, or URLs. Package identity is the repository, and package versions are the GitHub tags.
+- `schemaVersion`: integer 2.
+- `repository`: GitHub `owner/repo`; owner length 1–39, alphanumeric segments separated by single hyphens; repository length 1–100, ASCII letters, digits, underscores, hyphens or dots, excluding `.` and `..`.
+- `description`: trimmed single line, 1–200 Unicode characters; no control or format characters.
+- `maintainers`: 1–10 distinct lowercase GitHub login identifiers, at most 39 characters each.
+- `id`: runtime package identity, matching `[a-z0-9][a-z0-9.-]{0,127}`. It must match the feed and archive manifest.
+- `scopes`: `manager`, `client`, or both, without duplicates. The archive manifest must support the advertised scopes.
+- `releaseFeeds`: one to four entries keyed by `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`. Values are HTTPS source URLs without embedded credentials, query strings or fragments. Each source must serve a compatible archive for that exact target. A portable package may reuse a feed across targets if its manifest supports them all.
 
-## Strict parsing
+Optional `topics`: zero to five distinct lowercase topic identifiers, at most 35 characters each, matching `[a-z0-9]+(-[a-z0-9]+)*`.
 
-The parser rejects:
+Feeds must be public and unauthenticated. Do not add private metadata or credentials. The syntax validator does not make network requests or prove endpoint availability, ownership, compatibility or safety. Admission review checks publisher ownership and advertised ID/scope/target claims.
 
-- Unknown keys and key case aliases, so `SchemaVersion` is as unknown as a misspelled field.
-- Duplicate keys, including keys that only become duplicates after JSON escape decoding, so a `\u0073chemaVersion` key colliding with `schemaVersion` is rejected.
-- JSON `null` for any field or array entry.
-- Wrong value types.
-- Trailing JSON data after the descriptor object.
-- Invalid UTF-8, control characters, and Unicode format characters such as bidi overrides, isolates, the word joiner, and the zero-width space.
-- Descriptors larger than 16384 bytes.
-- More than 10000 descriptors in one run.
+Unknown or duplicate keys (including escaped aliases), nulls, wrong types, trailing data, malformed UTF-8 and descriptors over 16 KiB are rejected. A run accepts at most 10,000 descriptors. Invalid input leaves generated outputs untouched.
 
-An invalid descriptor leaves `index.json` and `catalog.md` untouched.
+## Runtime installation contract
+
+The user chooses one target-specific feed and configures that HTTPS source in Smidja manager/client. There is no automatic target selector or catalog install integration. The legacy `smidja pkg install owner/repo@version` command does not install these archives.
+
+The feed returns `{ "id", "version", "archive_url", "sha256" }`; the ZIP contains `smidja.json` and its SHA256-inventoried payload. Runtime versions are stable `x.y.z`; minimum runtime constraints use `>=x.y.z`. Installed packages are immutable. Publisher updates are checked by the runtime, not by this registry. No version bump in discovery is needed when a publisher updates its feed.
+
+Listing does not authorize executing package contents. Packages may contain native executable helpers. Inspect and trust the publisher before installation. Credentials are configured locally by the user; absent API credentials produce invocation errors, not account provisioning.
 
 ## Generated outputs
 
-Both files are produced only by the registry tool and are committed to git.
+Run `go run ./cmd/registry generate`, then `go run ./cmd/registry check`.
 
-### index.json
+`index.json` has top-level schemaVersion 2 and a packages array. Each record contains repository, description, maintainers, topics, id, scopes and releaseFeeds. Records sort case-insensitively by repository. Array metadata and feed keys are sorted; JSON is two-space indented with one trailing newline, no timestamps or environment data.
 
-- A top-level object with `schemaVersion` set to `1` and an always present `packages` array.
-- One record per descriptor with exactly the fields `repository`, `description`, `maintainers`, and `topics`, in that order.
-- Records sort case insensitively by `repository`; `maintainers` and `topics` sort ascending inside each record.
-- Two-space indented JSON with one trailing newline, no timestamps, and no environment data. HTML significant characters in strings are escaped as JSON escapes.
+`catalog.md` includes repository/tag links, escaped descriptions, identity, scopes and escaped feed URLs. Feed URLs are displayed as text, not promoted to trusted executable actions. All ASCII punctuation in user-provided rendered text is escaped. Generated output is deterministic and reviewed with descriptors.
 
-### catalog.md
-
-- One H1, a non-endorsement warning, a link to the contribution guide, and an explicit empty state while no packages are listed.
-- One entry per descriptor with a repository link and a tags link under `https://github.com/<owner>/<repo>`, sorted like the index records.
-- Descriptions are untrusted text: every ASCII punctuation character in a description is backslash escaped before it is rendered, so descriptions cannot inject markdown, HTML, or links. Format characters never reach rendering because the parser rejects them first. Generated links derive only from validated identifiers.
-
-## Commands
-
-From a checkout of this repository:
-
-```bash
-go run ./cmd/registry generate
-go run ./cmd/registry check
-```
-
-- `generate` validates every descriptor first and then rewrites `index.json` and `catalog.md` through same-directory temporary files and renames. Errors name the affected path.
-- `check` validates the descriptors, renders both outputs in memory, and compares the exact committed bytes. It reports missing or stale output and never writes. CI runs `check` on every pull request and every push to main.
+`check` renders in memory, compares exact bytes and never writes. CI remains offline, read-only and secret-free; it never executes package payloads.

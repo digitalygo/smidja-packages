@@ -298,8 +298,8 @@ func TestCheckCollisions(t *testing.T) {
 	t.Run("case insensitive collision", func(t *testing.T) {
 		t.Parallel()
 		err := checkCollisions([]Descriptor{
-			{SchemaVersion: 1, Repository: "acme/tools", Description: "d", Maintainers: []string{"a"}},
-			{SchemaVersion: 1, Repository: "ACME/TOOLS", Description: "d", Maintainers: []string{"a"}},
+			{SchemaVersion: 2, Repository: "acme/tools", Description: "d", Maintainers: []string{"a"}},
+			{SchemaVersion: 2, Repository: "ACME/TOOLS", Description: "d", Maintainers: []string{"a"}},
 		})
 		if err == nil || !strings.Contains(err.Error(), "collide case insensitively") {
 			t.Fatalf("checkCollisions error = %v, want a collision error", err)
@@ -311,8 +311,8 @@ func TestCheckCollisions(t *testing.T) {
 	t.Run("distinct repositories pass", func(t *testing.T) {
 		t.Parallel()
 		if err := checkCollisions([]Descriptor{
-			{SchemaVersion: 1, Repository: "acme/tools", Description: "d", Maintainers: []string{"a"}},
-			{SchemaVersion: 1, Repository: "octo-labs/notes", Description: "d", Maintainers: []string{"a"}},
+			{SchemaVersion: 2, Repository: "acme/tools", Description: "d", Maintainers: []string{"a"}},
+			{SchemaVersion: 2, Repository: "octo-labs/notes", Description: "d", Maintainers: []string{"a"}},
 		}); err != nil {
 			t.Fatalf("checkCollisions rejected distinct repositories: %v", err)
 		}
@@ -325,7 +325,7 @@ func TestLoadDescriptorTooLarge(t *testing.T) {
 	if err := os.Remove(filepath.Join(root, PackagesDir, KeepFile)); err != nil {
 		t.Fatal(err)
 	}
-	big := `{"schemaVersion":1,"repository":"a/b","description":"d","maintainers":["u"]}` + strings.Repeat(" ", MaxDescriptorBytes+1)
+	big := `{"schemaVersion":2,"id":"example.package","scopes":["manager"],"releaseFeeds":{"linux/amd64":"https://example.org/release.json"},"repository":"a/b","description":"d","maintainers":["u"]}` + strings.Repeat(" ", MaxDescriptorBytes+1)
 	writeFile(t, filepath.Join(root, PackagesDir, "a", "b.json"), big)
 	if _, err := Load(root); err == nil || !strings.Contains(err.Error(), "the limit is 16384 bytes") {
 		t.Fatalf("Load error = %v, want a size limit error", err)
@@ -363,7 +363,7 @@ func writeBulkRegistry(t *testing.T, count int) string {
 	}
 	for index := 0; index < count; index++ {
 		name := fmt.Sprintf("r%d.json", index)
-		content := fmt.Sprintf(`{"schemaVersion":1,"repository":"bulk/r%d","description":"d","maintainers":["a"]}`, index)
+		content := fmt.Sprintf(`{"schemaVersion":2,"id":"example.package","scopes":["manager"],"releaseFeeds":{"linux/amd64":"https://example.org/release.json"},"repository":"bulk/r%d","description":"d","maintainers":["a"]}`, index)
 		if err := os.WriteFile(filepath.Join(ownerDir, name), []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
